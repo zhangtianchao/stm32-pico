@@ -715,7 +715,7 @@ static void MX_GPIO_Init(void)
                           |MCU_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|PHY_RST_N_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|PHY_RST_N_Pin|WS2812B_DI_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PE2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
@@ -759,9 +759,86 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(PHY_RST_N_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : WS2812B_DI_Pin */
+  GPIO_InitStruct.Pin = WS2812B_DI_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(WS2812B_DI_GPIO_Port, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
+
+void delay_x100ns_at_400MHz_CPU(int n)
+{
+  // a nop 2.5ns
+  int i = 0;
+  for (i = 0; i < 10 * n; i++) {
+    __NOP();
+    __NOP();
+    __NOP();
+    __NOP();
+  }
+}
+
+// h=1000ns, l=500ns
+void ws2812b_write_h()
+{
+  HAL_GPIO_WritePin(WS2812B_DI_GPIO_Port, WS2812B_DI_Pin, GPIO_PIN_SET);
+  delay_x100ns_at_400MHz_CPU(10); // 1us
+  HAL_GPIO_WritePin(WS2812B_DI_GPIO_Port, WS2812B_DI_Pin, GPIO_PIN_RESET);
+  delay_x100ns_at_400MHz_CPU(5); // 0.5us
+}
+
+// h=200ns, l=1300ns
+void ws2812b_write_l()
+{
+  HAL_GPIO_WritePin(WS2812B_DI_GPIO_Port, WS2812B_DI_Pin, GPIO_PIN_SET);
+  delay_x100ns_at_400MHz_CPU(2); // 0.1us
+  HAL_GPIO_WritePin(WS2812B_DI_GPIO_Port, WS2812B_DI_Pin, GPIO_PIN_RESET);
+  delay_x100ns_at_400MHz_CPU(13); // 1.3us
+}
+
+// this function is busy
+// it will disable global interrupt
+// function call about 1.5*24 = 36us
+// TODO: change this to a aysnc function
+void ws2812b_set_color(uint8_t red, uint8_t green, uint8_t blue)
+{
+  __disable_irq();
+
+  // g, r, b
+  int i;
+  for (i = 0; i < 8; i++) {
+    if (green & 0x80) {
+      ws2812b_write_h();
+    } else {
+      ws2812b_write_l();
+    }
+    green = green << 1;
+  }
+
+  for (i = 0; i < 8; i++) {
+    if (red & 0x80) {
+      ws2812b_write_h();
+    } else {
+      ws2812b_write_l();
+    }
+    red = red << 1;
+  }
+
+  for (i = 0; i < 8; i++) {
+    if (blue & 0x80) {
+      ws2812b_write_h();
+    } else {
+      ws2812b_write_l();
+    }
+    blue = blue << 1;
+  }
+
+  __enable_irq();
+}
 
 /* USER CODE END 4 */
 
@@ -782,8 +859,10 @@ void StartDefaultTask(void *argument)
   {
     vTaskDelay(portTICK_PERIOD_MS*g_heat_led_gap);
     HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, GPIO_PIN_SET);
+    ws2812b_set_color(10, 0, 0);
     vTaskDelay(portTICK_PERIOD_MS*g_heat_led_gap);
     HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, GPIO_PIN_RESET);
+    ws2812b_set_color(0, 10, 0);
   }
   /* USER CODE END 5 */
 }
