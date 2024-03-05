@@ -23,7 +23,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <ctype.h>
+#include "bsp/board_api.h"
+#include "tusb.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,6 +66,14 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 static int g_heat_led_gap = 500;
+
+osThreadId_t usbTaskHandle;
+const osThreadAttr_t usbTask_attributes = {
+  .name = "usbTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -840,6 +850,49 @@ void ws2812b_set_color(uint8_t red, uint8_t green, uint8_t blue)
   __enable_irq();
 }
 
+/**
+ * usb cdc interface 0 is cli interface, ex: ttyACM0
+ * usb cdc interface 1 is raw cmd interface, ex: ttyACM1
+ */
+
+static void cdc_task(void)
+{
+  // uint8_t itf;
+  // static uint8_t buf[1024];
+  // int i;
+
+  // for (itf = 0; itf < CFG_TUD_CDC; itf++) {
+  //   // connected() check for DTR bit
+  //   // Most but not all terminal client set this when making connection
+  //   // if ( tud_cdc_n_connected(itf) )
+  //   {
+  //     if (tud_cdc_n_available(itf)) {
+  //       uint32_t count = tud_cdc_n_read(itf, buf, sizeof(buf));
+  //       // if (buf[0] == 'e') {
+  //       //   for (i = 0; i < 1000000; i++) {
+  //       //     tud_cdc_n_write(itf, buf, 1024);
+  //       //     tud_cdc_n_write_flush(itf);
+  //       //     tud_task();
+  //       //   }
+  //       // }
+  //       tud_cdc_n_write(itf, buf, count);
+  //       tud_cdc_n_write_flush(itf);
+  //     }
+  //   }
+  // }
+}
+
+void StartUsbTask(void *argument)
+{
+  vTaskDelay(portTICK_PERIOD_MS * 2000);
+  tud_init(BOARD_TUD_RHPORT);
+
+  for (;;) {
+    tud_task(); // tinyusb device task
+    cdc_task();
+  }
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -854,6 +907,9 @@ void StartDefaultTask(void *argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+
+  usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
+
   /* Infinite loop */
   for(;;)
   {
