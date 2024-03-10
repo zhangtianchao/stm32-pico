@@ -34,6 +34,8 @@
 #include <ctype.h>
 #include "bsp/board_api.h"
 #include "tusb.h"
+#include "embedded_cli.h"
+#include "pico_cli.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -82,6 +84,14 @@ const osThreadAttr_t usbTask_attributes = {
   .priority = (osPriority_t) osPriorityRealtime,
 };
 
+osThreadId_t cliTaskHandle;
+const osThreadAttr_t cliTask_attributes = {
+  .name = "cliTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+static EmbeddedCli *cli;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -901,6 +911,28 @@ static void cdc_task(void)
   //     }
   //   }
   // }
+
+  static uint8_t buf[128];
+  int i;
+
+  if ( tud_cdc_n_connected(0) ){
+    if (tud_cdc_n_available(0)) {
+      uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
+      if(count > 0){
+        for(i=0; i<count; i++){
+          embeddedCliReceiveChar(cli, (char)buf[i]);
+        }
+      }
+    }
+  }
+}
+
+void writeChar(EmbeddedCli *cli, char c)
+{
+  if (tud_ready()) {
+    tud_cdc_n_write_char(0, c);
+    tud_cdc_n_write_flush(0);
+  }
 }
 
 void StartUsbTask(void *argument)
@@ -911,6 +943,14 @@ void StartUsbTask(void *argument)
   for (;;) {
     tud_task(); // tinyusb device task
     cdc_task();
+  }
+}
+
+void StartCliTask(void *argument)
+{
+  for (;;) {
+    embeddedCliProcess(cli);
+    vTaskDelay(1);
   }
 }
 
@@ -930,6 +970,12 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 
   usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
+
+  cli = embeddedCliNewDefault();
+  cli->writeChar = writeChar;
+  cliTaskHandle = osThreadNew(StartCliTask, NULL, &cliTask_attributes);
+
+  pico_cli_init(cli);
 
   /* Infinite loop */
   for(;;)
