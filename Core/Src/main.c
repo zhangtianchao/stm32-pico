@@ -20,8 +20,8 @@
  * Sector 0     0x08000000-0x0801FFFF Boot 128KB
  * Sector 1     0x08020000-0x0803FFFF Boot Address, 4B
  * Sector 2-7   0x08040000-0x080FFFFF APP1 768KB
- * Sector 8-9   0x08100000-0x0813FFFF Data 256KB
- * Sector 10-15 0x08140000-0x081FFFFF APP2 768KB
+ * Sector 8-3   0x08100000-0x081BFFFF APP2 768KB
+ * Sector 14-15 0x081C0000-0x081FFFFF Data 256KB
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
@@ -114,8 +114,8 @@ typedef void (*pApp)(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)0x08020000);
-  if (APPLICATION_ADDRESS == 0x08040000 || APPLICATION_ADDRESS == 0x08140000) {
+  const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
+  if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
     const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
     pApp JumpToApp = (pApp)JumpAddress;
     /* Reconfigure vector table offset register to match the application location */

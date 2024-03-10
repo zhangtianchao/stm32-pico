@@ -68,7 +68,10 @@ void Error_Handler(void);
 #define MCU_LED_Pin GPIO_PIN_15
 #define MCU_LED_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
-
+#define APP_BOOT_ADDRESS_PHY_ADDR 0x08020000
+#define APP1_SECTOR_ADDRESS 0x08040000
+#define APP2_SECTOR_ADDRESS 0x08100000
+#define DATA_SECTOR_ADDRESS 0x081C0000
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
