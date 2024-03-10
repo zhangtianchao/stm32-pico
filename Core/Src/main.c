@@ -34,7 +34,8 @@
 #include <ctype.h>
 #include "bsp/board_api.h"
 #include "tusb.h"
-#include "embedded_cli.h"
+#include "usb_stdio.h"
+#include "console.h"
 #include "pico_cli.h"
 /* USER CODE END Includes */
 
@@ -91,7 +92,11 @@ const osThreadAttr_t cliTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 
-static EmbeddedCli *cli;
+uint64_t get_tick_ms()
+{
+  return (uint64_t)HAL_GetTick();
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -912,27 +917,16 @@ static void cdc_task(void)
   //   }
   // }
 
-  static uint8_t buf[128];
-  int i;
+  // static uint8_t buf[128];
+  // int i;
 
-  if ( tud_cdc_n_connected(0) ){
-    if (tud_cdc_n_available(0)) {
-      uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
-      if(count > 0){
-        for(i=0; i<count; i++){
-          embeddedCliReceiveChar(cli, (char)buf[i]);
-        }
-      }
-    }
-  }
-}
-
-void writeChar(EmbeddedCli *cli, char c)
-{
-  if (tud_ready()) {
-    tud_cdc_n_write_char(0, c);
-    tud_cdc_n_write_flush(0);
-  }
+  // if ( tud_cdc_n_connected(0) ){
+  //   if (tud_cdc_n_available(0)) {
+  //     uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
+  //     if(count > 0){
+  //     }
+  //   }
+  // }
 }
 
 void StartUsbTask(void *argument)
@@ -948,9 +942,27 @@ void StartUsbTask(void *argument)
 
 void StartCliTask(void *argument)
 {
+  int ret;
+
+  // enable cli console
+  console_init(usb_get_char, usb_put_char, usb_put_buf, (f_get_tick_ms)get_tick_ms);
+  // console_init(uart_get_char, uart_put_char, uart_put_buf, (f_get_tick_ms)get_tick_ms);
+  console_set_log_level(LOG_INFO);
+
+  char *cmd = NULL;
   for (;;) {
-    embeddedCliProcess(cli);
-    vTaskDelay(1);
+    osDelay(100);
+    cmd = check_command();
+    if (cmd) {
+      ret = pico_process_cmd(cmd);
+      if (ret == 0) {
+        cprintf("\n$PASS$\n");
+      } else {
+        cprintf("\nERRCODE: %d\n", ret);
+        cprintf("\n$FAIL$\n");
+      }
+      cprintf("$>");
+    }
   }
 }
 
@@ -970,12 +982,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 
   usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
-
-  cli = embeddedCliNewDefault();
-  cli->writeChar = writeChar;
   cliTaskHandle = osThreadNew(StartCliTask, NULL, &cliTask_attributes);
-
-  pico_cli_init(cli);
 
   /* Infinite loop */
   for(;;)
