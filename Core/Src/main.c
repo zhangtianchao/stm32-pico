@@ -15,6 +15,14 @@
   *
   ******************************************************************************
   */
+
+/**
+ * Sector 0     0x08000000-0x0801FFFF Boot 128KB
+ * Sector 1     0x08020000-0x0803FFFF Boot Address, 4B
+ * Sector 2-7   0x08040000-0x080FFFFF APP1 768KB
+ * Sector 8-9   0x08100000-0x0813FFFF Data 256KB
+ * Sector 10-15 0x08140000-0x081FFFFF APP2 768KB
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -65,7 +73,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-static int g_heat_led_gap = 500;
+static int g_heat_led_gap = 200;
 
 osThreadId_t usbTaskHandle;
 const osThreadAttr_t usbTask_attributes = {
@@ -91,7 +99,7 @@ static void MX_TIM15_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+typedef void (*pApp)(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -106,7 +114,20 @@ void StartDefaultTask(void *argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)0x08020000);
+  if (APPLICATION_ADDRESS == 0x08040000 || APPLICATION_ADDRESS == 0x08140000) {
+    const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+    pApp JumpToApp = (pApp)JumpAddress;
+    /* Reconfigure vector table offset register to match the application location */
+    SCB->VTOR = JumpAddress;
+    /* Initialize user application's Stack Pointer */
+    __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
 
+    JumpToApp();
+    while (1)
+      ;
+  }
+  // SCB->VTOR = APPLICATION_ADDRESS;
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
