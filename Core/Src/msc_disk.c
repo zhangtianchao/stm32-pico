@@ -47,6 +47,8 @@
 
 #if CFG_TUD_MSC
 
+extern uint32_t CODE_START_ADDRESS;
+
 static const char * PICO_FW_HEADER = "!!! THIS IS A PICO FIRMWARE !!!";
 static const char * PICO_FW_LEN_FLAG = "PICO_FW_LEN=";
 #define MSC_DATA_CONTENT_START_BLOCK (43)
@@ -133,7 +135,7 @@ uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] = {
   },
   //------------- Block7: ? Root Directory -------------//
   {
-    's',  't',  'm',  '3',  '2',  '-',  'b',  'o',  'o',  't',  ' ',  0x08, 0x00, 0x00, 0x8A, 0xB4, 
+    's',  't',  'm',  '3',  '2',  '-',  'a',  'p',  'p',  ' ',  ' ',  0x08, 0x00, 0x00, 0x8A, 0xB4, 
     0x6B, 0x58, 0x6B, 0x58, 0x00, 0x00, 0x8A, 0xB4, 0x6B, 0x58, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   }
 };
@@ -321,7 +323,18 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
       // TODO:
       // write boot address
       flash_erase_sector(APP_BOOT_ADDRESS_PHY_ADDR);
-      fw_addr = APP1_SECTOR_ADDRESS;
+      if(CODE_START_ADDRESS == FLASH_START_ADDRESS){
+        // boot loader always write to app1
+        fw_addr = APP1_SECTOR_ADDRESS;
+      }
+      if(CODE_START_ADDRESS == APP1_SECTOR_ADDRESS){
+        // app1 write app2
+        fw_addr = APP2_SECTOR_ADDRESS;
+      }
+      if(CODE_START_ADDRESS == APP2_SECTOR_ADDRESS){
+        // app2 write app1
+        fw_addr = APP1_SECTOR_ADDRESS;
+      }
       flash_write((uint8_t*)&fw_addr, (uint8_t *)APP_BOOT_ADDRESS_PHY_ADDR, 4);
       fw_addr = 0;
       // reboot mcu

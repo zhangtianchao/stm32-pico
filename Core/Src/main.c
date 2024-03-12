@@ -76,7 +76,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-static int g_heat_led_gap = 100;
+static int g_heat_led_gap = 500;
 
 osThreadId_t usbTaskHandle;
 const osThreadAttr_t usbTask_attributes = {
@@ -119,7 +119,7 @@ typedef void (*pApp)(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint32_t CODE_START_ADDRESS = FLASH_START_ADDRESS;
 /* USER CODE END 0 */
 
 /**
@@ -129,20 +129,35 @@ typedef void (*pApp)(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
-  if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
-    const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
-    pApp JumpToApp = (pApp)JumpAddress;
-    /* Reconfigure vector table offset register to match the application location */
-    SCB->VTOR = JumpAddress;
-    /* Initialize user application's Stack Pointer */
-    __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+  // const uint32_t bootflag = 0x12345678;
+  // uint32_t ptr = (uint32_t)(&bootflag);
+  // if (ptr < APP_BOOT_ADDRESS_PHY_ADDR) {
+  //   CODE_START_ADDRESS = FLASH_START_ADDRESS;
+  // }
+  // if (ptr > APP1_SECTOR_ADDRESS && ptr < APP2_SECTOR_ADDRESS) {
+  //   CODE_START_ADDRESS = APP1_SECTOR_ADDRESS;
+  //   SCB->VTOR = APP1_SECTOR_ADDRESS;
+  // }
+  // if (ptr > APP2_SECTOR_ADDRESS && ptr < DATA_SECTOR_ADDRESS) {
+  //   CODE_START_ADDRESS = APP2_SECTOR_ADDRESS;
+  //   SCB->VTOR = APP2_SECTOR_ADDRESS;
+  // }
+  // if (CODE_START_ADDRESS == FLASH_START_ADDRESS) { // bootloader app
+  //   const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
+  //   if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
+  //     const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+  //     pApp JumpToApp = (pApp)JumpAddress;
+  //     /* Reconfigure vector table offset register to match the application location */
+  //     SCB->VTOR = JumpAddress;
+  //     /* Initialize user application's Stack Pointer */
+  //     __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
 
-    JumpToApp();
-    while (1)
-      ;
-  }
-  // SCB->VTOR = APPLICATION_ADDRESS;
+  //     JumpToApp();
+  //     while (1)
+  //       ;
+  //   }
+  // }
+  SCB->VTOR = APP1_SECTOR_ADDRESS;
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
