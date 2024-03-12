@@ -335,7 +335,7 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
         // app2 write app1
         fw_addr = APP1_SECTOR_ADDRESS;
       }
-      flash_write((uint8_t*)&fw_addr, (uint8_t *)APP_BOOT_ADDRESS_PHY_ADDR, 4);
+      flash_write((uint8_t*)&fw_addr, APP_BOOT_ADDRESS_PHY_ADDR, 4);
       fw_addr = 0;
       // reboot mcu
     }
