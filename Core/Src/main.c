@@ -76,7 +76,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-static int g_heat_led_gap = 200;
+static int g_heat_led_gap = 100;
 
 osThreadId_t usbTaskHandle;
 const osThreadAttr_t usbTask_attributes = {
@@ -955,11 +955,13 @@ void StartCliTask(void *argument)
     cmd = check_command();
     if (cmd) {
       ret = pico_process_cmd(cmd);
-      if (ret == 0) {
-        cprintf("\n$PASS$\n");
-      } else {
-        cprintf("\nERRCODE: %d\n", ret);
-        cprintf("\n$FAIL$\n");
+      if (ret != 255) {
+        if (ret == 0) {
+          cprintf("\n$PASS$\n");
+        } else {
+          cprintf("\nERRCODE: %d\n", ret);
+          cprintf("\n$FAIL$\n");
+        }
       }
       cprintf("$>");
     }
@@ -989,10 +991,10 @@ void StartDefaultTask(void *argument)
   {
     vTaskDelay(portTICK_PERIOD_MS*g_heat_led_gap);
     HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, GPIO_PIN_SET);
-    ws2812b_set_color(10, 0, 0);
+    // ws2812b_set_color(10, 0, 0);
     vTaskDelay(portTICK_PERIOD_MS*g_heat_led_gap);
     HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, GPIO_PIN_RESET);
-    ws2812b_set_color(0, 10, 0);
+    // ws2812b_set_color(0, 10, 0);
   }
   /* USER CODE END 5 */
 }
