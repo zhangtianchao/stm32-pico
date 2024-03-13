@@ -82,6 +82,7 @@ int pico_process_cmd(const char *cmd)
     cprintf("echo on|off\n");
     cprintf("flash read|write|erase\n");
     cprintf("mscdump [sector]\n");
+    cprintf("rcc_rsr dump rcc rsr value\n");
     return 0;
   }
 
@@ -98,6 +99,12 @@ int pico_process_cmd(const char *cmd)
     int sector = strtoul(pcmd + 8, NULL, 0);
     msc_dump(sector);
     cprintf("\n");
+    return 0;
+  }
+
+  if (strstr(cmd, "rcc_rsr")) {
+    cprintf("rcc rsr = 0x%08lX\n", RCC->RSR);
+    return 0;
   }
 
   return 0;
