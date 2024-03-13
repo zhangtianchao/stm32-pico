@@ -140,11 +140,17 @@ int main(void)
     __HAL_RCC_CLEAR_RESET_FLAGS();
   }
 
+  int bootapp = 1;
+
   if ((RCC->RSR & STM32_RCC_RSR_MASK) == (RCC_RSR_CPURSTF | RCC_RSR_PINRSTF)) {
     // 这是仅仅RSET Pin引起的复位动作
     // 这种情况下进入bootloader逻辑
     // 即启动后，按下RESET键可以进入bootloader
-  } else {
+    bootapp = 0;
+  }
+
+  if (bootapp) {
+    __HAL_RCC_CLEAR_RESET_FLAGS(); // 清除复位标志
     const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
     if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
       const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);

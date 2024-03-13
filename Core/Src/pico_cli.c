@@ -8,6 +8,8 @@
 #include "flash.h"
 #include "pico_cli.h"
 
+extern void msc_dump(int sector);
+
 int flash_cmd(const char *cmd)
 {
   char *pcmd = 0;
