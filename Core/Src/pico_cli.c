@@ -66,6 +66,10 @@ int flash_cmd(const char *cmd)
     return ret;
   }
 
+  if(strstr(cmd, "rsr")){
+    cprintf("RCC->RSR = 0x%08lX\n", RCC->RSR);
+  }
+
   return 0;
 }
 

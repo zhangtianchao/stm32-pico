@@ -129,19 +129,50 @@ typedef void (*pApp)(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
-  if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
-    const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
-    pApp JumpToApp = (pApp)JumpAddress;
-    /* Reconfigure vector table offset register to match the application location */
-    SCB->VTOR = JumpAddress;
-    /* Initialize user application's Stack Pointer */
-    __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+  // if(__HAL_RCC_GET_FLAG(RCC_FLAG_CPURST)) {
+  //   /* IWDGRST flag set: reset the IWDG */
+  //   HAL_IWDG_Refresh(&hiwdg);
+  // }
 
-    JumpToApp();
-    while (1)
-      ;
+  if (RCC->RSR == 0x00FE0000) {
+    // 第一次上电启动RSR寄存器是0x00FE0000
+    // 清除第一次上电启动标志
+    __HAL_RCC_CLEAR_RESET_FLAGS();
   }
+
+  if ((RCC->RSR & STM32_RCC_RSR_MASK) == (RCC_RSR_CPURSTF | RCC_RSR_PINRSTF)) {
+    // 这是仅仅RSET Pin引起的复位动作
+    // 这种情况下进入bootloader逻辑
+    // 即启动后，按下RESET键可以进入bootloader
+  } else {
+    const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
+    if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
+      const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+      pApp JumpToApp = (pApp)JumpAddress;
+      /* Reconfigure vector table offset register to match the application location */
+      SCB->VTOR = JumpAddress;
+      /* Initialize user application's Stack Pointer */
+      __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+
+      JumpToApp();
+      while (1)
+        ;
+    }
+  }
+
+  // const uint32_t APPLICATION_ADDRESS = (*(__IO uint32_t *)APP_BOOT_ADDRESS_PHY_ADDR);
+  // if (APPLICATION_ADDRESS == APP1_SECTOR_ADDRESS || APPLICATION_ADDRESS == APP2_SECTOR_ADDRESS) {
+  //   const uint32_t JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+  //   pApp JumpToApp = (pApp)JumpAddress;
+  //   /* Reconfigure vector table offset register to match the application location */
+  //   SCB->VTOR = JumpAddress;
+  //   /* Initialize user application's Stack Pointer */
+  //   __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+
+  //   JumpToApp();
+  //   while (1)
+  //     ;
+  // }
   // SCB->VTOR = APPLICATION_ADDRESS;
   /* USER CODE END 1 */
 

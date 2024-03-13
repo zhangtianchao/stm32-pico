@@ -291,7 +291,7 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
   (void) lun;
 
 #ifdef _MSC_DEBUG_
-  printf("tud_msc_write10_cb(%d, %lu, %lu, %lu)\n", lun, lba, offset, bufsize);
+  cdebugf("tud_msc_write10_cb(%d, %lu, %lu, %lu)\n", lun, lba, offset, bufsize);
 #endif
   // 使用文件的开始512字节来标记是否是FW更新文件
   // 头部内容是固定的内容
@@ -299,32 +299,32 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
     fw_addr = APP1_SECTOR_ADDRESS;
     fw_len = strtoul(strstr((char *)buffer, PICO_FW_LEN_FLAG) + strlen(PICO_FW_LEN_FLAG), NULL, 0);
 #ifdef _MSC_DEBUG_
-    printf("got pico firmware header\n");
-    printf("fw_addr=0x%lX, fw_len=0x%lX\n", fw_addr, fw_len);
+    cdebugf("got pico firmware header\n");
+    cdebugf("fw_addr=0x%lX, fw_len=0x%lX\n", fw_addr, fw_len);
 #endif
     return bufsize;
   }
 
   if( lba >= MSC_DATA_CONTENT_START_BLOCK && fw_addr != 0 ) {
 #ifdef _MSC_DEBUG_
-    printf("write firmware to 0x%08lX\n", fw_addr);
+    cdebugf("write firmware to 0x%08lX\n", fw_addr);
 #endif
     // write flash
     if(flash_is_sector_start_address(fw_addr)) {
       st = flash_erase_sector(fw_addr);
-      printf("flash_erase_sector st = %d\n", st);
+      cdebugf("flash_erase_sector st = %d\n", st);
     }
     st = flash_write(buffer, fw_addr, bufsize);
-    printf("flash_write st = %d\n", st);
+    cdebugf("flash_write st = %d\n", st);
     fw_addr += bufsize;
     if(fw_addr >= (APP1_SECTOR_ADDRESS + fw_len)) {
-      // TODO:
       // write boot address
       flash_erase_sector(APP_BOOT_ADDRESS_PHY_ADDR);
       fw_addr = APP1_SECTOR_ADDRESS;
-      flash_write((uint8_t*)&fw_addr, (uint8_t *)APP_BOOT_ADDRESS_PHY_ADDR, 4);
+      flash_write((uint8_t*)&fw_addr, APP_BOOT_ADDRESS_PHY_ADDR, 4);
       fw_addr = 0;
       // reboot mcu
+      NVIC_SystemReset();
     }
     return bufsize;
   }
