@@ -1,6 +1,8 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
+#include <stdint.h>
+
 #define LOG_INFO 1
 #define LOG_DEBUG 2
 #define LOG_TRACE 3
