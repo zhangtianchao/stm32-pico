@@ -19,17 +19,23 @@
 
 #include "opcode.h"
 
-// TDI = GPIO0
-// TDO = GPIO1
-// TCK = GPIO2
-// TMS = GPIO3
-// JTAGEN = GPIO15
-#define TDI_PIN 0
-#define TDO_PIN 1
-#define TCK_PIN 2
-#define TMS_PIN 3
-#define JTAGEN_PIN 15
+#include "main.h"
 
+// TDI = PA3
+// TDO = PA0
+// TCK = PA4
+// TMS = PA5
+// JTAGEN = PA6
+#define TDO_Pin GPIO_PIN_0
+#define TDO_GPIO_Port GPIOA
+#define TDI_Pin GPIO_PIN_3
+#define TDI_GPIO_Port GPIOA
+#define TCK_Pin GPIO_PIN_4
+#define TCK_GPIO_Port GPIOA
+#define TMS_Pin GPIO_PIN_5
+#define TMS_GPIO_Port GPIOA
+#define JTAGEN_Pin GPIO_PIN_6
+#define JTAGEN_GPIO_Port GPIOA
 /*************************************************************
  *                                                            *
  * EXTERNAL VARIABLE                                          *
@@ -68,7 +74,8 @@ extern void ispVMStateMachine(char a_cNextState);
 
 unsigned char readPort()
 {
-  unsigned char ucRet = gpio_get(TDO_PIN);
+  // unsigned char ucRet = gpio_get(TDO_PIN);
+  unsigned char ucRet = HAL_GPIO_ReadPin(TDO_GPIO_Port, TDO_Pin);
   return (ucRet);
 }
 
@@ -116,30 +123,38 @@ void writePort(unsigned char a_ucPins, unsigned char a_ucValue)
   switch (a_ucPins) {
   case pinTMS:
     if (a_ucValue) {
-      gpio_put(TMS_PIN, 1);
+      // gpio_put(TMS_PIN, 1);
+      HAL_GPIO_WritePin(TMS_GPIO_Port, TMS_Pin, GPIO_PIN_SET);
     } else {
-      gpio_put(TMS_PIN, 0);
+      // gpio_put(TMS_PIN, 0);
+      HAL_GPIO_WritePin(TMS_GPIO_Port, TMS_Pin, GPIO_PIN_RESET);
     }
     break;
   case pinTCK:
     if (a_ucValue) {
-      gpio_put(TCK_PIN, 1);
+      // gpio_put(TCK_PIN, 1);
+      HAL_GPIO_WritePin(TCK_GPIO_Port, TCK_Pin, GPIO_PIN_SET);
     } else {
-      gpio_put(TCK_PIN, 0);
+      // gpio_put(TCK_PIN, 0);
+      HAL_GPIO_WritePin(TCK_GPIO_Port, TCK_Pin, GPIO_PIN_RESET);
     }
     break;
   case pinTDI:
     if (a_ucValue) {
-      gpio_put(TDI_PIN, 1);
+      // gpio_put(TDI_PIN, 1);
+      HAL_GPIO_WritePin(TDI_GPIO_Port, TDI_Pin, GPIO_PIN_SET);
     } else {
-      gpio_put(TDI_PIN, 0);
+      // gpio_put(TDI_PIN, 0);
+      HAL_GPIO_WritePin(TDI_GPIO_Port, TDI_Pin, GPIO_PIN_RESET);
     }
     break;
   case pinENABLE:
     if (a_ucValue) {
-      gpio_put(JTAGEN_PIN, 1);
+      // gpio_put(JTAGEN_PIN, 1);
+      HAL_GPIO_WritePin(JTAGEN_GPIO_Port, JTAGEN_Pin, GPIO_PIN_SET);
     } else {
-      gpio_put(JTAGEN_PIN, 0);
+      // gpio_put(JTAGEN_PIN, 0);
+      HAL_GPIO_WritePin(JTAGEN_GPIO_Port, JTAGEN_Pin, GPIO_PIN_RESET);
     }
   default: // pinTRST
     break;
@@ -235,22 +250,26 @@ void ispVMDelay(unsigned int a_uiDelay)
 
 void EnableHardware()
 {
-  gpio_init(TCK_PIN);
-  gpio_set_dir(TCK_PIN, GPIO_OUT);
-  gpio_init(TMS_PIN);
-  gpio_set_dir(TMS_PIN, GPIO_OUT);
-  gpio_init(TDI_PIN);
-  gpio_set_dir(TDI_PIN, GPIO_OUT);
-  gpio_init(JTAGEN_PIN);
-  gpio_set_dir(JTAGEN_PIN, GPIO_OUT);
-  gpio_init(TDO_PIN);
-  gpio_set_dir(TDO_PIN, GPIO_IN);
+  // gpio_init(TCK_PIN);
+  // gpio_set_dir(TCK_PIN, GPIO_OUT);
+  // gpio_init(TMS_PIN);
+  // gpio_set_dir(TMS_PIN, GPIO_OUT);
+  // gpio_init(TDI_PIN);
+  // gpio_set_dir(TDI_PIN, GPIO_OUT);
+  // gpio_init(JTAGEN_PIN);
+  // gpio_set_dir(JTAGEN_PIN, GPIO_OUT);
+  // gpio_init(TDO_PIN);
+  // gpio_set_dir(TDO_PIN, GPIO_IN);
   sleep_ms(1);
 
-  gpio_put(TCK_PIN, 1);
-  gpio_put(TMS_PIN, 1);
-  gpio_put(TDI_PIN, 1);
-  gpio_put(JTAGEN_PIN, 1);
+  // gpio_put(TCK_PIN, 1);
+  // gpio_put(TMS_PIN, 1);
+  // gpio_put(TDI_PIN, 1);
+  // gpio_put(JTAGEN_PIN, 1);
+  HAL_GPIO_WritePin(TCK_GPIO_Port, TCK_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(TMS_GPIO_Port, TMS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(TDI_GPIO_Port, TDI_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(JTAGEN_GPIO_Port, JTAGEN_Pin, GPIO_PIN_SET);
 
   ispVMStateMachine(RESET);
 }

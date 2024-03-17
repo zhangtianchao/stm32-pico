@@ -820,7 +820,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6
+  HAL_GPIO_WritePin(GPIOA, TDI_Pin|TCK_Pin|TMS_Pin|JTAGEN_Pin
                           |MCU_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -833,16 +833,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ToO_Pin */
-  GPIO_InitStruct.Pin = ToO_Pin;
+  /*Configure GPIO pin : TDO_Pin */
+  GPIO_InitStruct.Pin = TDO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ToO_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(TDO_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA3 PA4 PA5 PA6
-                           MCU_LED_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6
-                          |MCU_LED_Pin;
+  /*Configure GPIO pins : TDI_Pin TCK_Pin JTAGEN_Pin */
+  GPIO_InitStruct.Pin = TDI_Pin|TCK_Pin|JTAGEN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : TMS_Pin MCU_LED_Pin */
+  GPIO_InitStruct.Pin = TMS_Pin|MCU_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -878,6 +883,46 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void sleep_ms(int ms)
+{
+  HAL_Delay(ms);
+}
+
+//****************************************************************************
+ 
+volatile unsigned int *DWT_CYCCNT   = (volatile unsigned int *)0xE0001004;
+volatile unsigned int *DWT_CONTROL  = (volatile unsigned int *)0xE0001000;
+volatile unsigned int *DWT_LAR      = (volatile unsigned int *)0xE0001FB0;
+volatile unsigned int *SCB_DHCSR    = (volatile unsigned int *)0xE000EDF0;
+volatile unsigned int *SCB_DEMCR    = (volatile unsigned int *)0xE000EDFC;
+volatile unsigned int *ITM_TER      = (volatile unsigned int *)0xE0000E00;
+volatile unsigned int *ITM_TCR      = (volatile unsigned int *)0xE0000E80;
+ 
+//****************************************************************************
+ 
+// static int Debug_ITMDebug = 0;
+ 
+//****************************************************************************
+ 
+void dwt_enable(void)
+{
+  // if ((*SCB_DHCSR & 1) && (*ITM_TER & 1)) // Enabled?
+  //   Debug_ITMDebug = 1;
+ 
+  *SCB_DEMCR |= 0x01000000;
+  *DWT_LAR = 0xC5ACCE55; // enable access
+  *DWT_CYCCNT = 0; // reset the counter
+  *DWT_CONTROL |= 1 ; // enable the counter
+}
+ 
+//****************************************************************************
+ 
+void cpu_delay(uint32_t cycles)
+{
+  *DWT_CYCCNT = 0; // reset the counter
+  while((*DWT_CYCCNT) < cycles);
+}
 
 void delay_x100ns_at_400MHz_CPU(int n)
 {
@@ -1057,6 +1102,8 @@ void StartDefaultTask(void *argument)
   iwdgTaskHandle = osThreadNew(StartiWDGTask, NULL, &iwdgTask_attributes);
   usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
   cliTaskHandle = osThreadNew(StartCliTask, NULL, &cliTask_attributes);
+
+  dwt_enable();
 
   /* Infinite loop */
   for(;;)

@@ -55,12 +55,21 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void sleep_ms(int ms);
+void cpu_delay(uint32_t cycles);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ToO_Pin GPIO_PIN_0
-#define ToO_GPIO_Port GPIOA
+#define TDO_Pin GPIO_PIN_0
+#define TDO_GPIO_Port GPIOA
+#define TDI_Pin GPIO_PIN_3
+#define TDI_GPIO_Port GPIOA
+#define TCK_Pin GPIO_PIN_4
+#define TCK_GPIO_Port GPIOA
+#define TMS_Pin GPIO_PIN_5
+#define TMS_GPIO_Port GPIOA
+#define JTAGEN_Pin GPIO_PIN_6
+#define JTAGEN_GPIO_Port GPIOA
 #define PHY_RST_N_Pin GPIO_PIN_10
 #define PHY_RST_N_GPIO_Port GPIOB
 #define WS2812B_DI_Pin GPIO_PIN_14

@@ -32,7 +32,7 @@
 #include "main.h"
 #include "flash.h"
 
-#define _MSC_DEBUG_
+// #define _MSC_DEBUG_
 
 /**
  * note，Linux下
@@ -314,13 +314,12 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
     // write flash
     if(flash_is_sector_start_address(fw_addr)) {
       st = flash_erase_sector(fw_addr);
-      printf("flash_erase_sector st = %d\n", st);
+      // printf("flash_erase_sector st = %d\n", st);
     }
     st = flash_write(buffer, fw_addr, bufsize);
-    printf("flash_write st = %d\n", st);
+    // printf("flash_write st = %d\n", st);
     fw_addr += bufsize;
     if(fw_addr >= (APP1_SECTOR_ADDRESS + fw_len)) {
-      // TODO:
       // write boot address
       flash_erase_sector(APP_BOOT_ADDRESS_PHY_ADDR);
       if(CODE_START_ADDRESS == FLASH_START_ADDRESS){
