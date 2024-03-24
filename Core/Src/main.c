@@ -37,6 +37,7 @@
 #include "usb_stdio.h"
 #include "console.h"
 #include "pico_cli.h"
+#include "pico_reg.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -219,6 +220,8 @@ int main(void)
   HAL_Delay(1);
   HAL_GPIO_WritePin(PHY_RST_N_GPIO_Port, PHY_RST_N_Pin, GPIO_PIN_SET);
 
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -363,7 +366,11 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
-  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.OversamplingMode = ENABLE;
+  hadc1.Init.Oversampling.Ratio = 10;
+  hadc1.Init.Oversampling.RightBitShift = ADC_RIGHTBITSHIFT_NONE;
+  hadc1.Init.Oversampling.TriggeredMode = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
+  hadc1.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -379,7 +386,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_64CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -1045,6 +1052,34 @@ void ws2812b_set_color(uint8_t red, uint8_t green, uint8_t blue)
   __enable_irq();
 }
 
+int adc1_get_voltage_mv(uint32_t channel, uint16_t *mv)
+{
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  sConfig.Channel = channel;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_64CYCLES_5;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  sConfig.OffsetSignedSaturation = DISABLE;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+    ctrace("adc1 config ch%d fail\n", channel);
+    return -1;
+  }
+  uint32_t rawv = 0;
+  HAL_ADC_Start(&hadc1);
+  if (HAL_ADC_PollForConversion(&hadc1, 10) != HAL_OK) {
+    ctrace("adc1 poll ch%d fail\n", channel);
+    return -2;
+  }
+  rawv = HAL_ADC_GetValue(&hadc1);
+  rawv = rawv / ADC1_OVERSAMPLING_RATIO;
+  *mv = (((rawv * ADC1_VREF_VOLTAGE) / (65535)));
+
+  return 0;
+}
+
 /**
  * usb cdc interface 0 is cli interface, ex: ttyACM0
  * usb cdc interface 1 is raw cmd interface, ex: ttyACM1
@@ -1149,6 +1184,7 @@ void StartDefaultTask(void *argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+  uint16_t v;
 
   iwdgTaskHandle = osThreadNew(StartiWDGTask, NULL, &iwdgTask_attributes);
   usbTaskHandle = osThreadNew(StartUsbTask, NULL, &usbTask_attributes);
@@ -1165,6 +1201,14 @@ void StartDefaultTask(void *argument)
     vTaskDelay(portTICK_PERIOD_MS*g_heat_led_gap);
     HAL_GPIO_WritePin(MCU_LED_GPIO_Port, MCU_LED_Pin, GPIO_PIN_RESET);
     // ws2812b_set_color(0, 10, 0);
+
+    if (0 == adc1_get_voltage_mv(POUT_ADC_CH, &v)) {
+      pico_reg.voltage._.pout = v;
+    }
+
+    if (0 == adc1_get_voltage_mv(PLD_VREF_ADC_CH, &v)) {
+      pico_reg.voltage._.vref = v;
+    }
   }
   /* USER CODE END 5 */
 }

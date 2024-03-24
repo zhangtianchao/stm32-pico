@@ -7,10 +7,22 @@
 #define PICO_REG_COMMON_BUF_SIZE 2048
 
 struct _pico_registers_st {
-  uint8_t VER_MAJOR;                            // 0-1B
-  uint8_t VER_MINOR;                            // 1-1B
-  uint8_t CPLD_VER_MAJOR;                       // 2-1B
-  uint8_t CPLD_VER_MINOR;                       // 3-1B
+  union _offset_0 {
+    struct {
+      uint8_t VER_MAJOR;      // 0-1B
+      uint8_t VER_MINOR;      // 1-1B
+      uint8_t CPLD_VER_MAJOR; // 2-1B
+      uint8_t CPLD_VER_MINOR; // 3-1B
+    } _;
+    uint32_t raw;
+  } version;
+  union _offset_4 {
+    struct {
+      uint16_t pout;
+      uint16_t vref;
+    } _;
+    uint32_t raw;
+  } voltage;
   uint8_t UUID[PICO_UUID_SIZE_BYTES];           // 4-8B
   uint8_t PEER_IP[4];                           // 12-4B client ip address
   uint32_t UP_SECOND;                           // 16-4B up time second
@@ -35,6 +47,8 @@ struct _pico_registers_st {
   uint8_t common_buf[PICO_REG_COMMON_BUF_SIZE]; // 132-2048B common tx rx buffer
 } __attribute__((packed));
 typedef struct _pico_registers_st pico_registers_st;
+
+extern pico_registers_st pico_reg;
 
 int pico_reg_read(uint32_t addr, uint8_t *buf, uint32_t len);
 int pico_reg_write(uint32_t addr, const uint8_t *buf, uint32_t len);

@@ -5,7 +5,7 @@
 
 #include "pico_reg.h"
 
-static pico_registers_st pico_reg;
+pico_registers_st pico_reg;
 
 int pico_reg_read(uint32_t addr, uint8_t *buf, uint32_t len)
 {

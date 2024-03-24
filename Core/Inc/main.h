@@ -57,6 +57,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void sleep_ms(int ms);
 void cpu_delay(uint32_t cycles);
+int adc1_get_voltage_mv(uint32_t channel, uint16_t *mv);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -82,6 +83,11 @@ void cpu_delay(uint32_t cycles);
 #define APP1_SECTOR_ADDRESS 0x08040000
 #define APP2_SECTOR_ADDRESS 0x08100000
 #define DATA_SECTOR_ADDRESS 0x081C0000
+
+#define ADC1_OVERSAMPLING_RATIO 10
+#define ADC1_VREF_VOLTAGE 2048
+#define POUT_ADC_CH ADC_CHANNEL_5
+#define PLD_VREF_ADC_CH ADC_CHANNEL_9
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
