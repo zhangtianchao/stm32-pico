@@ -128,6 +128,18 @@ void ctrace(const char *format, ...)
   }
 }
 
+void cprint_hex(const uint8_t *buf, int len)
+{
+  int i, j;
+  for (i = 0; i < len; i += 16) {
+    cprintf("%04X: ", i * 16);
+    for (j = 0; ((j < 16) && ((i + j) < len)); j++) {
+      cprintf("%02X ", buf[i + j]);
+    }
+    cprintf("\n");
+  }
+}
+
 void reset_history_cmd_ptr();
 
 char *get_history_cmd(bool up)

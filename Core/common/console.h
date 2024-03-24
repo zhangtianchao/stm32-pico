@@ -35,6 +35,7 @@ void cprintf(const char *format, ...);
 void cinfo(const char *format, ...);
 void cdebugf(const char *format, ...);
 void ctrace(const char *format, ...);
+void cprint_hex(const uint8_t *buf, int len);
 void echo_onoff(int on);
 char *check_command();
 

@@ -3,15 +3,20 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "main.h"
 #include "console.h"
 #include "flash.h"
 #include "io_jtag_hal.h"
 #include "jtag.h"
+#include "pico_reg.h"
 #include "pico_cli.h"
 
 extern void msc_dump(int sector);
+
+#define PCIO_CLI_BUF_LEN 1024
+static uint8_t pico_cli_buf[PCIO_CLI_BUF_LEN];
 
 int flash_cmd(const char *cmd)
 {
@@ -69,6 +74,78 @@ int flash_cmd(const char *cmd)
     cprintf("write flash @%08lX\n", addr);
     ret = flash_write(buf, addr, len);
     return ret;
+  }
+
+  return 0;
+}
+
+int reg_cmd(const char *cmd)
+{
+  char *pcmd = 0;
+  uint32_t addr = 0;
+  uint32_t i, len = 0;
+  uint8_t *buf = pico_cli_buf;
+  bool human = false;
+  int ret;
+
+  if ((pcmd = strstr(cmd, "-h"))) {
+    cprintf("reg -> reg command\n");
+    cprintf("  -h      :show this help message\n");
+    cprintf("  -r addr :read register\n");
+    cprintf("  -w addr :write register\n");
+    cprintf("  -l len  :read data length\n");
+    cprintf("  -d data :data to write\n");
+    cprintf("  --man :enable human view\n");
+    return 0;
+  }
+
+  if ((pcmd = strstr(cmd, "--man"))) {
+    human = true;
+  }
+
+  if ((pcmd = strstr(cmd, "-l"))) {
+    len = strtoul(pcmd + 3, NULL, 0);
+    if (len > PCIO_CLI_BUF_LEN) {
+      cprintf("data length should be <= %d\n", PCIO_CLI_BUF_LEN);
+      return -1;
+    }
+  }
+
+  if ((pcmd = strstr(cmd, "-d"))) {
+    pcmd = strtok(pcmd + 3, ",");
+    while (pcmd != NULL) {
+      buf[len++] = strtoul(pcmd, NULL, 0);
+      if (len > PCIO_CLI_BUF_LEN) {
+        cprintf("data length should be <= %d\n", PCIO_CLI_BUF_LEN);
+        return -1;
+      }
+      pcmd = strtok(NULL, ",");
+    }
+  }
+
+  if ((pcmd = strstr(cmd, "-r"))) {
+    addr = strtoul(pcmd + 3, NULL, 0);
+    ret = pico_reg_read(addr, buf, len);
+    if (ret != len)
+      return ret;
+    if (human) {
+      cprint_hex(buf, len);
+    } else {
+      cprintf("\n:");
+      for (i = 0; i < len; i++) {
+        cprintf("%02x", buf[i]);
+      }
+      cprintf(":\n");
+    }
+    return 0;
+  }
+
+  if ((pcmd = strstr(cmd, "-w"))) {
+    addr = strtoul(pcmd + 3, NULL, 0);
+    ret = pico_reg_write(addr, buf, len);
+    if (ret != len)
+      return ret;
+    return 0;
   }
 
   return 0;
@@ -151,9 +228,14 @@ int pico_process_cmd(const char *cmd)
     cprintf("hello\n");
     cprintf("echo on|off\n");
     cprintf("flash read|write|erase\n");
+    cprintf("reg read|write\n");
     cprintf("mscdump [sector]\n");
     cprintf("rcc_rsr dump rcc rsr value\n");
     return 0;
+  }
+
+  if (strstr(cmd, "reg")) {
+    return reg_cmd(cmd);
   }
 
   if (strstr(cmd, "echo")) {
